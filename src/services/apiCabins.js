@@ -23,6 +23,7 @@ return data
 }
 
 export async function createCabin(newCabin, id){
+  
   //https://jrubnjwivnkeabeovhfi.supabase.co/storage/v1/object/public/cabin-images/cabin-004.jpg?t=2023-08-08T10%3A23%3A53.769Z  
  const  hasImagePath = newCabin.image?.startsWith('https://jrubnjwivnkeabeovhfi.supabase.co')
   const imageName   =  `${Math.random()}-${newCabin.image.name}`.replaceAll('/','')
@@ -52,7 +53,7 @@ if(err) {
     throw new Error(err)
   }
 
-
+if(hasImagePath) return newCreatedCabinData;
  
   const {  error: storagError } = await supabase
     .storage

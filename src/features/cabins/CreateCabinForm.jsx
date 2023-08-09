@@ -9,6 +9,8 @@ import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCabin } from "../../services/apiCabins";
 import { toast } from "react-hot-toast";
+import { useCreateCabin } from "./useCreateCabin";
+import { useEditCabin } from "./useEditCabin";
 
 const FormRow = styled.div`
   display: grid;
@@ -46,48 +48,36 @@ const Error = styled.span`
   color: var(--color-red-700);
 `;
 
-function CreateCabinForm({cabinToEdit = {}}) {
+function CreateCabinForm({cabinToEdit = {}, onCloseModal}) {
   const {id:editId , ...editValues}  = cabinToEdit
   const isEditSession = Boolean(editId)
   const {register,handleSubmit, reset,getValues,formState} =useForm({
     defaultValues:isEditSession?editValues:{}
   })
+  const {isCreating,createNewCabin} = useCreateCabin()
+  const {isEditing,editCabin} = useEditCabin()
  const {errors} = formState
- const queryClient = useQueryClient()
- const {isCreating, mutate:createNewCabin}=useMutation({
-  mutationFn:createCabin,
-  onSuccess:()=>{
-    toast.success("New Cabin was created and stored")
-    queryClient.invalidateQueries({
-      queryKey:['cabins']
-    })
-    reset()
-  },
-  onError:(err)=>toast.error('There is an error in creating new Cabin', err.message)
- })
- const {isEditing, mutate:editCabin}=useMutation({
-  mutationFn:({newCabinData,id})=>createCabin(newCabinData,id),
-  onSuccess:()=>{
-    toast.success("Cabin updated successsfully")
-    queryClient.invalidateQueries({
-      queryKey:['cabins']
-    })
-    reset()
-  },
-  onError:(err)=>toast.error('There is an error in creating new Cabin', err.message)
- })
+
  const isWorking = isCreating || isEditing
  function submitHandle(data){
   const image = typeof data.image === 'string' ? data.image :data.image['0']
-if(isEditSession) editCabin({newCabinData:{...data, image},editId})
-else createNewCabin({...data, image})
+if(isEditSession) editCabin({newCabinData:{...data, image},editId},{
+  onSuccess:()=> {reset()
+    onCloseModal?.()},
+   
+})
+else createNewCabin({...data, image},{
+  onSuccess:()=> {reset()
+    onCloseModal?.()},
+})
 
  }
  function onError(err){
 
  }
   return (
-    <Form onSubmit={handleSubmit(submitHandle,onError)}>
+    <Form onSubmit={handleSubmit(submitHandle,onError)}
+    type={onCloseModal? "modal":'regular'}>
       <FormRow>
         <Label htmlFor="name">Cabin name</Label>
         <Input type="text" id="name" {...register('name', {
@@ -142,7 +132,7 @@ else createNewCabin({...data, image})
 
       <FormRow>
         {/* type is an HTML attribute! */}
-        <Button variation="secondary" type="reset">
+        <Button variation="secondary" type="reset" onClick={()=> onCloseModal?.()}>
           Cancel
         </Button>
         <Button disabled={isWorking}>{isEditSession?'Edit cabin':'Create new Cabin'}</Button>
